@@ -1,0 +1,96 @@
+@startuml Pyroscope_Mission_Flow
+!theme plain
+title Pyroscope Autonomous Mission - Data Flow Sequence
+
+actor "Operator" as USER
+box "Mac (Client)" #F8BBD0
+    participant "React\nDashboard" as REACT
+    participant "API Client" as API_CLIENT
+end box
+
+box "Remote PC (Backend)" #FFF9C4
+    participant "FastAPI\nBackend" as BACKEND
+    database "PostgreSQL" as DB
+    participant "ROS Sensor\nBridge" as BRIDGE
+end box
+
+box "Jetson (Robot)" #BBDEFB
+    participant "Coverage\nPlanner" as PLANNER
+    participant "Waypoint\nController" as CONTROLLER
+    participant "Obstacle\nDetector" as DETECTOR
+    participant "Safety\nStop" as SAFETY
+    collections "ROS Topics" as TOPICS
+    participant "Hardware\n(Sensors/Motors)" as HW
+end box
+
+== Pre-Mission Setup ==
+USER -> REACT : Configure mission\n(2×2m area)
+REACT -> API_CLIENT : Click "Start Scan"
+
+== Mission Start ==
+API_CLIENT -> BACKEND : POST /robot/mission/start\n{area: 2.0, spacing: 0.5}
+BACKEND -> DB : INSERT Scan record
+BACKEND -> PLANNER : roslaunch coverage_mission.launch\n(or ROS service call)
+PLANNER -> PLANNER : Generate lawnmower\nwaypoint pattern\n(12 waypoints)
+
+== Mission Execution Loop (for each waypoint) ==
+loop For each waypoint (12 total)
+    PLANNER -> TOPICS : Publish /waypoint\nPoseStamped(x, y, θ)
+
+    par Parallel Processes
+        ' Navigation Control
+        TOPICS -> CONTROLLER : Subscribe /waypoint
+        HW -> TOPICS : Publish /odom\n(encoder feedback)
+        TOPICS -> CONTROLLER : Subscribe /odom
+        CONTROLLER -> CONTROLLER : PID Control\nlinear = 0.5 * distance\nangular = 1.5 * yaw_error
+        CONTROLLER -> TOPICS : Publish /cmd_vel\nTwist(linear, angular)
+        TOPICS -> HW : Motor commands
+
+        ' Safety System
+        HW -> TOPICS : Publish /scan\n(lidar data)
+        TOPICS -> DETECTOR : Subscribe /scan
+        DETECTOR -> DETECTOR : Check front arc\n(±30°, <0.30m)
+        DETECTOR -> TOPICS : Publish /obstacle_detected\nBool
+        TOPICS -> SAFETY : Subscribe /obstacle_detected
+
+        alt Obstacle Detected
+            SAFETY -> TOPICS : OVERRIDE /cmd_vel\nTwist(0, 0) @ 20Hz
+            TOPICS -> HW : STOP motors
+            TOPICS -> PLANNER : Pause mission
+        end
+
+        ' Sensor Data Collection
+        HW -> TOPICS : Publish /sensors/sht40/temperature
+        HW -> TOPICS : Publish /sensors/thermal/mean
+        HW -> TOPICS : Publish /camera/color/image_raw
+        TOPICS -> BRIDGE : Subscribe sensor topics
+        BRIDGE -> BRIDGE : Convert to JSON/JPEG
+        BRIDGE -> BACKEND : Write latest_sensors.json\nWrite rgb_latest.jpg
+    end
+
+    ' Goal Reached
+    CONTROLLER -> CONTROLLER : if distance < 0.5m:\n  goal_reached = True
+    CONTROLLER -> TOPICS : Publish /goal_reached\nBool(True)
+    TOPICS -> PLANNER : Subscribe /goal_reached
+    PLANNER -> PLANNER : Dwell for thermal\ncapture (2 seconds)
+    PLANNER -> PLANNER : Move to next waypoint
+end
+
+== Real-time Frontend Updates (Continuous) ==
+loop Every 1 second
+    REACT -> API_CLIENT : Poll sensors
+    API_CLIENT -> BACKEND : GET /sensors/latest
+    BACKEND -> BACKEND : Read latest_sensors.json
+    BACKEND --> API_CLIENT : JSON response\n{temp, humidity, thermal}
+    API_CLIENT --> REACT : Update SensorPanel
+    REACT --> USER : Display live data
+end
+
+== Mission Complete ==
+PLANNER -> PLANNER : All waypoints done
+PLANNER -> TOPICS : Publish mission complete
+BACKEND -> DB : UPDATE Scan\n(duration, status)
+BACKEND --> API_CLIENT : Mission complete event
+REACT --> USER : Show results
+
+@enduml

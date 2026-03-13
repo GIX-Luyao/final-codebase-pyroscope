@@ -1,0 +1,29 @@
+@startuml Overview_Simple
+!theme plain
+scale 2.0
+
+skinparam defaultFontSize 22
+skinparam ArrowThickness 6
+skinparam rectangleBorderThickness 4
+
+title <size:32><b>Pyroscope System Overview</b></size>
+
+rectangle "<size:28><b>AUTONOMOUS\nROBOT</b></size>\n━━━━━━━━━━━━━━━\n<size:18>Yahboom Tank Rover\nROS Melodic\nMultiple Sensors</size>" as ROBOT #BBDEFB
+
+rectangle "<size:28><b>WEB\nDASHBOARD</b></size>\n━━━━━━━━━━━━━━━\n<size:18>React Frontend\nReal-time Monitoring\nMission Control</size>" as WEB #F8BBD0
+
+rectangle "<size:28><b>COVERAGE\nMISSION</b></size>\n━━━━━━━━━━━━━━━\n<size:18>Lawnmower Pattern\nThermal Scanning\nAutomatic Navigation</size>" as MISSION #E3F2FD
+
+rectangle "<size:28><b>DATA\nANALYSIS</b></size>\n━━━━━━━━━━━━━━━\n<size:18>Thermal Heatmaps\nRisk Assessment\nWildfire Detection</size>" as ANALYSIS #E8F5E9
+
+WEB -down-> MISSION : <size:20><b>START</b></size>
+MISSION -right-> ROBOT : <size:20><b>EXECUTE</b></size>
+ROBOT -down-> ANALYSIS : <size:20><b>COLLECT</b></size>
+ANALYSIS -left-> WEB : <size:20><b>DISPLAY</b></size>
+
+note bottom
+    <size:18><b>Key Innovation:</b> Fully autonomous thermal scanning for wildfire risk assessment</size>
+    <size:16>Operator configures mission → Robot executes autonomously → Results displayed in real-time</size>
+end note
+
+@enduml

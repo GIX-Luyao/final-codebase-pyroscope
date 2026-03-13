@@ -1,0 +1,34 @@
+@startuml Simple_Architecture
+!theme plain
+scale 1.5
+
+skinparam defaultFontSize 18
+skinparam defaultFontName Arial
+skinparam ArrowThickness 4
+skinparam packageBorderThickness 3
+
+title <size:28><b>System Architecture</b></size>
+
+' Three main devices
+rectangle "<size:24><b>🤖 ROBOT</b></size>\n<size:16>Jetson Nano</size>\n\n<size:14>• Navigation Control\n• Obstacle Detection\n• Sensor Collection</size>" as ROBOT #BBDEFB {
+}
+
+rectangle "<size:24><b>🖥️ SERVER</b></size>\n<size:16>Remote PC</size>\n\n<size:14>• Data Processing\n• API Backend\n• Database Storage</size>" as SERVER #FFF9C4 {
+}
+
+rectangle "<size:24><b>💻 DASHBOARD</b></size>\n<size:16>Web Browser</size>\n\n<size:14>• Mission Control\n• Live Monitoring\n• Results Visualization</size>" as DASHBOARD #F8BBD0 {
+}
+
+ROBOT -right-> SERVER : <size:16><b>WiFi</b></size>\n<size:12>Sensor Data</size>
+SERVER -right-> DASHBOARD : <size:16><b>HTTP</b></size>\n<size:12>Real-time Updates</size>
+DASHBOARD -left-> SERVER : <size:16><b>REST API</b></size>\n<size:12>Commands</size>
+SERVER -left-> ROBOT : <size:16><b>ROS</b></size>\n<size:12>Mission Launch</size>
+
+legend bottom
+    <size:14><b>Data Flow</b></size>
+    <size:12>→ Sensor readings from robot to server
+    → Live updates to web dashboard
+    → Mission commands from operator</size>
+endlegend
+
+@enduml

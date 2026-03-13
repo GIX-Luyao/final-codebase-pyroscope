@@ -1,0 +1,180 @@
+@startuml Pyroscope_Architecture_3_Devices
+!define DEVICE_COLOR #E8F5E9
+!define ROS_COLOR #BBDEFB
+!define API_COLOR #FFF9C4
+!define WEB_COLOR #F8BBD0
+!define DATA_COLOR #E1BEE7
+!define SENSOR_COLOR #FFCCBC
+
+skinparam rectangle {
+    BackgroundColor DEVICE_COLOR
+    BorderColor #424242
+    FontSize 12
+}
+
+skinparam component {
+    FontSize 11
+}
+
+title Pyroscope System Architecture - 3-Device Deployment
+
+' ============= DEVICE 1: JETSON NANO (ONBOARD ROBOT) =============
+rectangle "**DEVICE 1: Jetson Nano (Onboard Robot)**\nUbuntu 18.04 | ROS Melodic" as JETSON #E8F5E9 {
+
+    ' Hardware Layer
+    rectangle "**HARDWARE LAYER**" as HW_LAYER #FFCCBC {
+        [Wheel Encoders] as ENCODERS
+        [Motor Controllers] as MOTORS
+        [RPLidar A1/A2] as LIDAR
+        [Thermal Camera\nMLX90640] as THERMAL_CAM
+        [SHT40 Sensor\n(Temp/Humidity)] as SHT40
+        [USB RGB Camera] as RGB_CAM
+    }
+
+    ' ROS Layer
+    rectangle "**ROS NAVIGATION LAYER**" as ROS_NAV #BBDEFB {
+        component "coverage_planner.py\n(Mission Commander)" as PLANNER
+        component "waypoint_controller.py\n(PID Controller)" as CONTROLLER
+        component "lidar_obstacle_detector.py\n(Collision Detection)" as DETECTOR
+        component "safety_stop.py\n(Emergency Brake)" as SAFETY
+    }
+
+    ' ROS Topics
+    rectangle "**ROS TOPICS**" as TOPICS #E1BEE7 {
+        queue "/odom" as ODOM_TOPIC
+        queue "/scan" as SCAN_TOPIC
+        queue "/waypoint" as WP_TOPIC
+        queue "/cmd_vel" as VEL_TOPIC
+        queue "/goal_reached" as GOAL_TOPIC
+        queue "/obstacle_detected" as OBS_TOPIC
+        queue "/sensors/sht40/*" as SENSOR_TOPICS
+        queue "/camera/color/image_raw" as IMAGE_TOPIC
+    }
+}
+
+' ============= DEVICE 2: REMOTE PC (BACKEND SERVER) =============
+rectangle "**DEVICE 2: Remote PC (Backend Server)**\nUbuntu/Linux | Python 3.9" as SERVER #FFF3E0 {
+
+    ' ROS Bridge
+    rectangle "**INTEGRATION LAYER**" as BRIDGE_LAYER #BBDEFB {
+        component "ros_sensor_bridge.py\n(Python 2 ROS Node)\nSubscribes to ROS topics" as BRIDGE
+    }
+
+    ' File System
+    database "**SHARED FILE SYSTEM**" as FILES #E1BEE7 {
+        file "latest_sensors.json\n(Sensor values)" as JSON_FILE
+        file "rgb_latest.jpg\n(Camera image)" as IMAGE_FILE
+    }
+
+    ' Backend API
+    rectangle "**APPLICATION LAYER**" as BACKEND #FFF9C4 {
+        component "FastAPI Backend\n(run.py)" as API {
+            component "sensors.py\n(Live data API)" as SENSORS_API
+            component "robot.py\n(Mission control)" as ROBOT_API
+            component "scans.py\n(CRUD)" as SCANS_API
+            component "images.py\n(Image storage)" as IMAGES_API
+        }
+    }
+
+    ' Database
+    database "PostgreSQL\nDatabase" as DB #E1BEE7 {
+        storage "Scans" as SCANS_TBL
+        storage "EnvironmentalData" as ENV_TBL
+        storage "Images" as IMG_TBL
+    }
+}
+
+' ============= DEVICE 3: MAC (CLIENT) =============
+rectangle "**DEVICE 3: Mac/Laptop (Client)**\nmacOS | Web Browser" as CLIENT #FCE4EC {
+
+    ' Frontend
+    rectangle "**PRESENTATION LAYER**" as FRONTEND #F8BBD0 {
+        component "React Dashboard\n(Vite Dev Server)" as REACT {
+            component "App.jsx\n(Mission control)" as APP
+            component "MapView.jsx\n(GPS visualization)" as MAP
+            component "SensorPanel.jsx\n(Live sensors)" as SENSOR_PANEL
+            component "ScanResults.jsx\n(History)" as RESULTS
+        }
+
+        component "API Client\n(services/api.js)" as API_CLIENT
+    }
+
+    actor "Operator" as USER
+}
+
+' ==================== DATA FLOW CONNECTIONS ====================
+
+' Hardware -> ROS Topics
+ENCODERS -down-> ODOM_TOPIC : "Encoder\nticks"
+LIDAR -down-> SCAN_TOPIC : "360° laser\ndata"
+SHT40 -down-> SENSOR_TOPICS : "Temp/Humidity\nFloat64"
+THERMAL_CAM -down-> SENSOR_TOPICS : "Thermal mean\nFloat64"
+RGB_CAM -down-> IMAGE_TOPIC : "ROS Image\nmsg"
+
+' ROS Topics -> Navigation Nodes
+ODOM_TOPIC -down-> CONTROLLER : "Current\nposition"
+SCAN_TOPIC -down-> DETECTOR : "Laser\nreadings"
+WP_TOPIC -down-> CONTROLLER : "Target\npose"
+OBS_TOPIC -down-> SAFETY : "Obstacle\nbool"
+OBS_TOPIC -up-> PLANNER : "Pause\nmission"
+
+' Navigation Nodes -> ROS Topics
+PLANNER -down-> WP_TOPIC : "Next\nwaypoint"
+CONTROLLER -down-> VEL_TOPIC : "Linear/Angular\nvelocity"
+CONTROLLER -up-> GOAL_TOPIC : "Goal reached\nbool"
+DETECTOR -down-> OBS_TOPIC : "Obstacle\ndetected"
+SAFETY -down-> VEL_TOPIC : "STOP\noveride"
+
+' ROS Topics -> Motors
+VEL_TOPIC -down-> MOTORS : "Motor\ncommands"
+GOAL_TOPIC -up-> PLANNER : "Waypoint\ncomplete"
+
+' Cross-Device: ROS Topics -> Bridge (over WiFi)
+SENSOR_TOPICS ..> BRIDGE : "**ROS over WiFi**\nroscpp network"
+IMAGE_TOPIC ..> BRIDGE : "**ROS over WiFi**\nroscpp network"
+
+' Bridge -> Files
+BRIDGE -down-> JSON_FILE : "Write 2 Hz\nJSON"
+BRIDGE -down-> IMAGE_FILE : "Write on msg\nJPEG"
+
+' Files -> Backend API
+JSON_FILE -down-> SENSORS_API : "Read on GET\nFile I/O"
+IMAGE_FILE -down-> SENSORS_API : "Serve image\nFileResponse"
+
+' Backend API -> Database
+ROBOT_API -down-> SCANS_TBL : "CREATE scan\nSQL INSERT"
+SCANS_API -down-> SCANS_TBL : "CRUD\nSQL queries"
+SCANS_API -down-> ENV_TBL : "Store readings\nSQL INSERT"
+IMAGES_API -down-> IMG_TBL : "Store metadata\nSQL INSERT"
+
+' Backend API -> ROS (mission control)
+ROBOT_API ..> PLANNER : "**Start mission**\nROS launch\n(SSH or roslaunch)"
+
+' Cross-Device: Backend -> Frontend (over WiFi)
+API ..> API_CLIENT : "**HTTP/REST**\n10.18.61.71:8000\nJSON responses"
+
+' Frontend components
+API_CLIENT -up-> APP : "API calls"
+API_CLIENT -up-> SENSOR_PANEL : "GET /sensors/latest\n1 Hz polling"
+API_CLIENT -up-> RESULTS : "GET /scans"
+APP -down-> API_CLIENT : "POST /robot/mission/start"
+MAP -down-> API_CLIENT : "GET /scans/{id}"
+
+' User interaction
+USER -down-> REACT : "Web UI\ninteraction"
+
+' ==================== LEGEND ====================
+legend right
+    |= Color | Meaning |
+    | <back:#BBDEFB>   </back> | ROS Layer (Python 2) |
+    | <back:#FFF9C4>   </back> | Backend API (Python 3) |
+    | <back:#F8BBD0>   </back> | Frontend (React/JS) |
+    | <back:#E1BEE7>   </back> | Data Storage |
+    | <back:#FFCCBC>   </back> | Hardware Sensors |
+
+    **Network Protocols:**
+    → Solid: Local (same device)
+    ··> Dotted: Network (WiFi/HTTP)
+endlegend
+
+@enduml

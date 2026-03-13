@@ -1,0 +1,88 @@
+@startuml Network_Topology
+!theme plain
+
+title Pyroscope Network Topology
+
+cloud "WiFi Network\n10.18.61.0/24" as NETWORK {
+    node "WiFi Router\n10.18.61.1" as ROUTER
+}
+
+node "Jetson Nano (Robot)\n10.18.61.50" as JETSON {
+    component "ROS Master\nroscore\nport 11311" as ROSCORE
+    component "Navigation Nodes\n(4 nodes)" as NAV_NODES
+    component "Sensor Publishers" as SENSORS
+    database "ROS Graph" as ROS_GRAPH
+
+    NAV_NODES --> ROS_GRAPH
+    SENSORS --> ROS_GRAPH
+    ROSCORE --> ROS_GRAPH : "Manages\ntopics"
+}
+
+node "Remote PC (Backend)\n10.18.61.71" as SERVER {
+    component "FastAPI Server\n0.0.0.0:8000" as BACKEND_API
+    component "ROS Sensor Bridge\n(connects to ROS Master)" as BRIDGE
+    database "PostgreSQL\nport 5432" as POSTGRES
+    folder "sensor_data/\n(shared files)" as FILES
+
+    BRIDGE --> FILES : "Write"
+    BACKEND_API --> FILES : "Read"
+    BACKEND_API --> POSTGRES
+}
+
+node "Mac (Client)\n10.18.61.100" as MAC {
+    component "Web Browser\nlocalhost:5173" as BROWSER
+    component "Vite Dev Server\nport 5173" as VITE
+
+    BROWSER --> VITE : "localhost"
+}
+
+' Network connections
+JETSON -down- ROUTER : "WiFi\n2.4/5 GHz"
+SERVER -down- ROUTER : "WiFi or\nEthernet"
+MAC -down- ROUTER : "WiFi"
+
+' Application connections
+BRIDGE ..> ROSCORE : "ROS Topics\nTCP 11311+\nroscpp"
+VITE ..> BACKEND_API : "HTTP REST\nhttp://10.18.61.71:8000\nJSON"
+BACKEND_API ..> ROSCORE : "roslaunch\nSSH or\nROS service"
+
+note right of ROSCORE
+    **ROS Master**
+    - Manages topic publishers/subscribers
+    - Runs on Jetson
+    - ROS_MASTER_URI exported
+      on all ROS nodes
+end note
+
+note right of BACKEND_API
+    **Backend API**
+    - Listens on 0.0.0.0:8000
+      (all interfaces)
+    - CORS enabled for Mac IP
+    - Serves /api/* endpoints
+end note
+
+note left of VITE
+    **Frontend**
+    - Development server
+    - Production: static build
+      served by nginx
+    - API_BASE_URL configured
+      to point to 10.18.61.71:8000
+end note
+
+legend right
+    **Port Summary:**
+    | Device | Service | Port |
+    | Jetson | ROS Master | 11311+ |
+    | Server | FastAPI | 8000 |
+    | Server | PostgreSQL | 5432 |
+    | Mac | Vite Dev | 5173 |
+
+    **Network Requirements:**
+    - All devices on same subnet
+    - Static IP recommended for Server
+    - Firewall allow ports 8000, 11311
+endlegend
+
+@enduml

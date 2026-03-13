@@ -1,0 +1,59 @@
+@startuml Mission_Sequence_Visual
+!theme plain
+left to right direction
+
+skinparam defaultFontSize 20
+skinparam defaultFontName Arial Bold
+skinparam ArrowThickness 6
+skinparam ArrowColor #1976D2
+
+title <b><size:40>Mission Execution Sequence</size></b>
+
+skinparam card {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    BorderThickness 5
+    FontSize 22
+    RoundCorner 20
+}
+
+skinparam actor {
+    BackgroundColor #F8BBD0
+    BorderColor #C2185B
+    BorderThickness 3
+}
+
+actor "<b><size:28>👤</size></b>\n\n<b>OPERATOR</b>" as USER #F8BBD0
+
+card "<b><size:36>①</size></b>\n\n<b>PLAN</b>\n\nSelect\nArea" as PLAN #BBDEFB
+
+card "<b><size:36>②</size></b>\n\n<b>PATH</b>\n\nGenerate\nGrid" as PATH #90CAF9
+
+card "<b><size:36>③</size></b>\n\n<b>DRIVE</b>\n\nNavigate\nAuto" as DRIVE #64B5F6
+
+card "<b><size:36>④</size></b>\n\n<b>SCAN</b>\n\nCapture\nData" as SCAN #42A5F5
+
+card "<b><size:36>⑤</size></b>\n\n<b>STREAM</b>\n\nLive\nFeed" as STREAM #2196F3
+
+card "<b><size:36>⑥</size></b>\n\n<b>DONE</b>\n\nShow\nResults" as DONE #1976D2
+
+USER -right-> PLAN : <b>Configure</b>
+PLAN -right-> PATH : <b>Generate</b>
+PATH -right-> DRIVE : <b>Execute</b>
+DRIVE -right-> SCAN : <b>At each\nwaypoint</b>
+SCAN -right-> STREAM : <b>Real-time</b>
+STREAM -right-> DONE : <b>Complete</b>
+
+note bottom of DRIVE
+    <b>AUTONOMOUS</b>
+    Loop for 12+
+    waypoints
+end note
+
+note bottom of STREAM
+    <b>LIVE UPDATES</b>
+    Dashboard
+    shows data
+end note
+
+@enduml

@@ -1,0 +1,120 @@
+@startuml Navigation_Control_Detail
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam activity {
+    BackgroundColor #BBDEFB
+    BorderColor #1976D2
+    FontSize 11
+}
+
+title ROS Navigation Control Flow (Jetson Device)
+
+start
+
+:User clicks "Start Scan"\non Mac Dashboard;
+
+:FastAPI Backend calls\nroslaunch coverage_mission.launch;
+
+partition "Coverage Planner Node" {
+    :Generate lawnmower waypoint grid\n(2m × 2m area);
+    note right
+        Pattern: Boustrophedon
+        Row 0: (0,0) → (2,0)
+        Row 1: (2,0.8) ← (0,0.8)
+        Row 2: (0,1.6) → (2.0,1.6)
+        Total: ~12 waypoints
+    end note
+
+    :waypoint_index = 0;
+}
+
+repeat
+    partition "Coverage Planner" {
+        :Publish /waypoint\nPoseStamped(x, y, θ);
+        :goal_reached = False;
+    }
+
+    fork
+        partition "Waypoint Controller" {
+            repeat
+                :Read current pose from /odom;
+
+                :Calculate error:\ndistance = √((x_target - x)² + (y_target - y)²)\nyaw_error = atan2(dy, dx) - θ_current;
+
+                if (distance < 0.5m?) then (yes)
+                    :Publish /goal_reached = True;
+                    :Stop motors (vel = 0);
+                    stop
+                else (no)
+                    if (|yaw_error| > 45°?) then (yes)
+                        :Turn in place:\nlinear = 0\nangular = 1.5 × yaw_error;
+                    else (no)
+                        :Drive and turn:\nlinear = 0.5 × distance\nangular = 1.5 × yaw_error;
+                    endif
+
+                    :Publish /cmd_vel\nTwist(linear, angular);
+                endif
+
+                :Sleep 50ms;
+            repeat while (goal not reached)
+        }
+    fork again
+        partition "Obstacle Detector" {
+            repeat
+                :Read /scan (lidar data);
+
+                :min_distance = ∞;
+
+                :For each ray in front arc (±30°):\nif valid_range:\n  min_distance = min(min_distance, range);
+
+                if (min_distance < 0.30m?) then (yes)
+                    :Publish /obstacle_detected = True;
+                else (no)
+                    :Publish /obstacle_detected = False;
+                endif
+
+                :Sleep 50ms;
+            repeat while (mission active) backwards
+        }
+    fork again
+        partition "Safety Stop" {
+            repeat
+                :Read /obstacle_detected;
+
+                if (obstacle detected?) then (yes)
+                    :OVERRIDE /cmd_vel\nTwist(0, 0);
+                    note right
+                        Runs at 20 Hz
+                        Overrides controller
+                        commands
+                    end note
+                else (no)
+                    :No action (let controller drive);
+                endif
+
+                :Sleep 50ms;
+            repeat while (mission active) backwards
+        }
+    end fork
+
+    partition "Coverage Planner" {
+        :Wait for /goal_reached = True\nOR timeout (30s);
+
+        if (timeout?) then (yes)
+            :Log warning: "Waypoint timeout";
+        endif
+
+        :Dwell at waypoint\n(2 seconds for thermal capture);
+
+        :waypoint_index++;
+    }
+
+repeat while (waypoint_index < total_waypoints?)
+
+:Mission complete;
+
+:Publish mission_status = "complete";
+
+stop
+
+@enduml
