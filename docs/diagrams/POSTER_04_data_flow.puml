@@ -1,0 +1,26 @@
+@startuml Data_Flow_Simple
+!theme plain
+scale 2.5
+
+skinparam defaultFontSize 20
+skinparam ArrowThickness 5
+skinparam ArrowFontSize 18
+
+title <size:30><b>Data Flow</b></size>
+
+cloud "<size:22><b>🌡️ SENSORS</b></size>\n\n<size:16>Temperature\nHumidity\nThermal Camera\nRGB Camera</size>" as SENSORS #FFCCBC
+
+database "<size:22><b>📊 DATA STORAGE</b></size>\n\n<size:16>PostgreSQL\nImage Files\nThermal Maps</size>" as DB #E1BEE7
+
+actor "<size:22><b>👤 OPERATOR</b></size>\n\n<size:16>Mission Control\nReal-time View</size>" as USER #F8BBD0
+
+SENSORS -down-> DB : <size:20><b>① COLLECT</b></size>\n<size:14>Stream sensor data\n2-10 Hz updates</size>
+DB -right-> USER : <size:20><b>② ANALYZE</b></size>\n<size:14>Thermal heatmaps\nRisk assessment</size>
+USER -up-> SENSORS : <size:20><b>③ CONTROL</b></size>\n<size:14>Start/stop mission\nSet parameters</size>
+
+legend bottom
+    <size:16><b>Real-Time System</b></size>
+    <size:14>Continuous sensor data streaming → Database storage → Live dashboard updates</size>
+endlegend
+
+@enduml

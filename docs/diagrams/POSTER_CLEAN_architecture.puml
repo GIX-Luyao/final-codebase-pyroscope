@@ -1,0 +1,29 @@
+@startuml Architecture_Clean
+!theme plain
+
+skinparam defaultFontSize 24
+skinparam defaultFontName Arial Bold
+skinparam ArrowThickness 6
+skinparam packageBorderThickness 4
+skinparam RoundCorner 20
+
+title <b><size:40>System Architecture</size></b>
+
+package "**ROBOT**\n\n<size:20>Jetson Nano</size>" as ROBOT #BBDEFB {
+    rectangle "• ROS Navigation\n• Obstacle Detection\n• Sensor Collection" as R1 #E3F2FD
+}
+
+package "**SERVER**\n\n<size:20>Remote PC</size>" as SERVER #FFF9C4 {
+    rectangle "• FastAPI Backend\n• Data Processing\n• PostgreSQL Database" as S1 #FFFDE7
+}
+
+package "**DASHBOARD**\n\n<size:20>Web Browser</size>" as DASH #F8BBD0 {
+    rectangle "• React Frontend\n• Mission Control\n• Live Monitoring" as D1 #FCE4EC
+}
+
+ROBOT -right-> SERVER : <b><size:22>WiFi</size></b>\n<size:18>Sensor Data</size>
+SERVER -right-> DASH : <b><size:22>HTTP</size></b>\n<size:18>Real-time</size>
+DASH -left-> SERVER : <b><size:22>REST</size></b>\n<size:18>Commands</size>
+SERVER -left-> ROBOT : <b><size:22>ROS</size></b>\n<size:18>Launch</size>
+
+@enduml

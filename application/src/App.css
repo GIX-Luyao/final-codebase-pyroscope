@@ -1,0 +1,162 @@
+.dashboard {
+  display: flex;
+  height: 100vh;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 0;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.latest-capture-panel {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--bg-main, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.latest-capture-title {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.latest-capture-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.latest-capture-image-wrap {
+  flex-shrink: 0;
+}
+
+.latest-capture-img-label {
+  margin: 0 0 4px 0;
+  font-size: 0.78rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.latest-capture-image {
+  max-width: 16px;
+  max-height: 12px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.latest-capture-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.latest-capture-time {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.latest-capture-wait {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Scan modal: overlay + content (reuses .latest-capture-* for snapshot body) */
+.scan-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.scan-modal-content {
+  background: var(--bg-main, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 14px;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+
+.scan-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  opacity: 0.8;
+}
+
+.scan-modal-close:hover {
+  opacity: 1;
+}
+
+.scan-modal-finish {
+  margin: 24px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scan-modal-tick {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.scan-prompt-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.scan-prompt-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.scan-prompt-cancel {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.scan-prompt-confirm {
+  background: var(--primary-green);
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .dashboard {
+    flex-direction: column;
+  }
+  
+  .main-content {
+    padding: 12px;
+  }
+}
+

@@ -1,0 +1,147 @@
+@startuml Pyroscope_Layers_3_Devices
+!theme plain
+
+title Pyroscope System Layers Across 3 Devices
+
+' Define layers with device assignment
+package "**PRESENTATION LAYER**\n[Mac/Client Device]" #F8BBD0 {
+    [React Dashboard\n(Vite)] as FRONTEND
+    component "Components" {
+        [App.jsx]
+        [MapView.jsx]
+        [SensorPanel.jsx]
+        [ScanResults.jsx]
+    }
+    [API Client\n(api.js)] as API_CLIENT
+
+    FRONTEND --> API_CLIENT
+    [App.jsx] -up-|> FRONTEND
+    [MapView.jsx] -up-|> FRONTEND
+    [SensorPanel.jsx] -up-|> FRONTEND
+    [ScanResults.jsx] -up-|> FRONTEND
+}
+
+cloud "**WiFi Network**\n10.18.61.0/24" as NETWORK {
+}
+
+package "**APPLICATION LAYER**\n[Remote PC Device]" #FFF9C4 {
+    [FastAPI Backend\n(run.py)] as BACKEND
+
+    component "API Routers" {
+        [sensors.py\nLive Data] as SENSOR_ROUTER
+        [robot.py\nMission Control] as ROBOT_ROUTER
+        [scans.py\nCRUD] as SCANS_ROUTER
+        [images.py\nImage Storage] as IMAGES_ROUTER
+    }
+
+    database "PostgreSQL\nDatabase" as DB {
+        folder "Tables" {
+            [Scans]
+            [EnvironmentalData]
+            [Images]
+        }
+    }
+
+    BACKEND --> SENSOR_ROUTER
+    BACKEND --> ROBOT_ROUTER
+    BACKEND --> SCANS_ROUTER
+    BACKEND --> IMAGES_ROUTER
+
+    SCANS_ROUTER --> DB
+    IMAGES_ROUTER --> DB
+    ROBOT_ROUTER --> DB
+}
+
+package "**INTEGRATION LAYER**\n[Remote PC Device]" #E1BEE7 {
+    [ROS Sensor Bridge\n(Python 2)] as BRIDGE
+
+    folder "Shared Files" {
+        file "latest_sensors.json" as JSON
+        file "rgb_latest.jpg" as IMAGE
+    }
+
+    BRIDGE --> JSON : Write 2Hz
+    BRIDGE --> IMAGE : Write on msg
+
+    SENSOR_ROUTER --> JSON : Read on GET
+    SENSOR_ROUTER --> IMAGE : Serve FileResponse
+}
+
+cloud "**ROS Network**\nROS_MASTER_URI" as ROS_NETWORK {
+}
+
+package "**ROBOT LAYER**\n[Jetson Nano Device]" #BBDEFB {
+    component "Navigation Nodes" {
+        [coverage_planner.py] as PLANNER
+        [waypoint_controller.py] as CONTROLLER
+        [lidar_obstacle_detector.py] as DETECTOR
+        [safety_stop.py] as SAFETY
+    }
+
+    collections "ROS Topics" as TOPICS {
+        queue "/odom"
+        queue "/scan"
+        queue "/waypoint"
+        queue "/cmd_vel"
+        queue "/obstacle_detected"
+        queue "/sensors/sht40/*"
+        queue "/camera/color/image_raw"
+    }
+
+    PLANNER <--> TOPICS
+    CONTROLLER <--> TOPICS
+    DETECTOR <--> TOPICS
+    SAFETY <--> TOPICS
+}
+
+package "**HARDWARE LAYER**\n[Jetson Nano Device]" #FFCCBC {
+    [Wheel Encoders] as ENCODERS
+    [Motor Controllers] as MOTORS
+    [RPLidar] as LIDAR
+    [Thermal Camera] as THERMAL
+    [SHT40 Sensor] as SHT40
+    [RGB Camera] as RGB_CAM
+
+    ENCODERS --> TOPICS : "/odom"
+    LIDAR --> TOPICS : "/scan"
+    SHT40 --> TOPICS : "/sensors/*"
+    THERMAL --> TOPICS : "/sensors/thermal/*"
+    RGB_CAM --> TOPICS : "/camera/*"
+
+    TOPICS --> MOTORS : "/cmd_vel"
+}
+
+' Cross-layer connections
+API_CLIENT <..> NETWORK : HTTP/REST\nport 8000
+NETWORK <..> BACKEND : JSON
+
+BACKEND <..> ROS_NETWORK : ROS Launch\n(SSH/roslaunch)
+BRIDGE <..> ROS_NETWORK : ROS Topics\n(rospy)
+ROS_NETWORK <..> TOPICS : ROS Pub/Sub
+
+' Notes on devices
+note right of FRONTEND
+    **Device 1: Mac/Client**
+    - No ROS required
+    - Just web browser
+    - Can be any device
+end note
+
+note right of BACKEND
+    **Device 2: Remote PC**
+    - Runs both Backend API
+      (Python 3) and ROS Bridge
+      (Python 2)
+    - Needs ROS Melodic
+    - Static IP preferred
+end note
+
+note right of TOPICS
+    **Device 3: Jetson Nano**
+    - Onboard robot compute
+    - Runs all ROS nodes
+    - Direct hardware access
+    - Ubuntu 18.04 + ROS Melodic
+end note
+
+@enduml

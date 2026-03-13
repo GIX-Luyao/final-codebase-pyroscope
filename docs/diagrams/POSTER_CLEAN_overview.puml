@@ -1,0 +1,30 @@
+@startuml Overview_Clean
+!theme plain
+
+skinparam defaultFontSize 28
+skinparam defaultFontName Arial Bold
+skinparam ArrowThickness 8
+skinparam rectangleBorderThickness 5
+skinparam RoundCorner 25
+
+title <b><size:44>Pyroscope System</size></b>
+
+rectangle "<b><size:32>AUTONOMOUS\nROBOT</size></b>\n━━━━━━━━━━━━━━━\n\nYahboom Tank\nROS Control\nMulti-Sensor" as ROBOT #BBDEFB
+
+rectangle "<b><size:32>COVERAGE\nMISSION</size></b>\n━━━━━━━━━━━━━━━\n\nLawnmower Path\nThermal Scan\nAuto Navigate" as MISSION #90CAF9
+
+rectangle "<b><size:32>DATA\nANALYSIS</size></b>\n━━━━━━━━━━━━━━━\n\nThermal Maps\nRisk Score\nWildfire Risk" as ANALYSIS #E8F5E9
+
+rectangle "<b><size:32>WEB\nDASHBOARD</size></b>\n━━━━━━━━━━━━━━━\n\nReact UI\nLive Monitor\nMission Plan" as WEB #F8BBD0
+
+WEB -down-> MISSION : <b>START</b>
+MISSION -right-> ROBOT : <b>EXECUTE</b>
+ROBOT -down-> ANALYSIS : <b>COLLECT</b>
+ANALYSIS -left-> WEB : <b>DISPLAY</b>
+
+note bottom
+    <b><size:22>Fully Autonomous Thermal Scanning</size></b>
+    <size:18>for Wildfire Risk Assessment</size>
+end note
+
+@enduml

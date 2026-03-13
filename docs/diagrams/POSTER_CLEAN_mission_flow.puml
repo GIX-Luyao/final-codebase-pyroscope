@@ -1,0 +1,52 @@
+@startuml Mission_Flow_Clean
+!theme plain
+
+skinparam defaultFontSize 22
+skinparam defaultFontName Arial Bold
+skinparam ArrowThickness 5
+skinparam ArrowColor #1976D2
+
+title <b><size:36>Mission Workflow</size></b>
+
+skinparam rectangle {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    BorderThickness 4
+    FontSize 20
+    RoundCorner 15
+}
+
+rectangle "**1**\n\nCONFIGURE\nMISSION\n\nSelect area\nSet parameters" as STEP1 #BBDEFB
+rectangle "**2**\n\nGENERATE\nPATH\n\nLawnmower\npattern" as STEP2 #90CAF9
+rectangle "**3**\n\nNAVIGATE\n\nDrive to\nwaypoint" as STEP3 #64B5F6
+rectangle "**4**\n\nCOLLECT\nDATA\n\nSensors +\nCamera" as STEP4 #42A5F5
+rectangle "**5**\n\nSTREAM\nLIVE\n\nReal-time\nupdates" as STEP5 #2196F3
+rectangle "**6**\n\nCOMPLETE\n\nGenerate\nheatmap" as STEP6 #1976D2
+
+STEP1 -down-> STEP2
+STEP2 -down-> STEP3
+STEP3 -down-> STEP4
+STEP4 -down-> STEP5
+STEP5 -down-> STEP6
+
+note left of STEP3
+    <b><size:18>AUTONOMOUS</size></b>
+    <size:16>Repeats for
+    each waypoint</size>
+end note
+
+note right of STEP5
+    <b><size:18>REAL-TIME</size></b>
+    <size:16>Live sensor
+    monitoring</size>
+end note
+
+legend bottom
+    <b><size:18>Key Features</size></b>
+    <size:16>• Fully autonomous navigation
+    • Obstacle detection active
+    • Complete area coverage
+    • Live dashboard updates</size>
+endlegend
+
+@enduml

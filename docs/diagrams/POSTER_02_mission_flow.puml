@@ -1,0 +1,56 @@
+@startuml Mission_Flow_Simple
+!theme plain
+scale 2.0
+
+skinparam defaultFontSize 16
+skinparam defaultFontName Arial
+skinparam ArrowThickness 3
+
+title <size:26><b>Autonomous Mission Workflow</b></size>
+
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    BorderThickness 3
+    FontSize 18
+}
+
+start
+
+:<size:20><b>①</b> Operator Configures Mission</size>
+<size:14>Select scan area on map
+Set coverage parameters</size>;
+
+:<size:20><b>②</b> Generate Waypoint Pattern</size>
+<size:14>Lawnmower path algorithm
+~12 waypoints for 2×2m area</size>;
+
+partition "<size:18><b>For Each Waypoint</b></size>" {
+    :<size:20><b>③</b> Navigate to Target</size>
+    <size:14>PID controller drives robot
+    Obstacle detection active</size>;
+
+    :<size:20><b>④</b> Collect Sensor Data</size>
+    <size:14>Temperature, humidity, thermal
+    RGB camera capture</size>;
+
+    :<size:20><b>⑤</b> Stream to Dashboard</size>
+    <size:14>Real-time updates
+    Live sensor readings</size>;
+}
+
+:<size:20><b>⑥</b> Mission Complete</size>
+<size:14>Generate thermal heatmap
+Display results</size>;
+
+stop
+
+legend bottom
+    <size:14><b>Key Features</b></size>
+    <size:12>• <b>Autonomous Navigation</b> - No manual control
+    • <b>Real-time Monitoring</b> - Live sensor data
+    • <b>Safety First</b> - Obstacle avoidance active
+    • <b>Complete Coverage</b> - Systematic pattern</size>
+endlegend
+
+@enduml

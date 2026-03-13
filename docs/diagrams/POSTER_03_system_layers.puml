@@ -1,0 +1,44 @@
+@startuml System_Layers_Simple
+!theme plain
+
+skinparam defaultFontSize 20
+skinparam defaultFontName Arial
+skinparam packageBorderThickness 4
+
+title <size:28><b>System Layers</b></size>
+
+package "<size:24><b>WEB INTERFACE</b></size>" #F8BBD0 {
+    [<size:20><b>React Dashboard</b></size>\n<size:16>Mission Planning\nLive Monitoring\nData Visualization</size>]
+}
+
+package "<size:24><b>APPLICATION</b></size>" #FFF9C4 {
+    [<size:20><b>FastAPI Backend</b></size>\n<size:16>REST API\nData Storage\nMission Control</size>]
+}
+
+package "<size:24><b>ROBOT CONTROL</b></size>" #BBDEFB {
+    [<size:20><b>ROS Navigation</b></size>\n<size:16>Waypoint Planning\nObstacle Detection\nMotor Control</size>]
+}
+
+package "<size:24><b>HARDWARE</b></size>" #FFCCBC {
+    [<size:20><b>Sensors & Actuators</b></size>\n<size:16>Lidar • Camera\nThermal • Motors</size>]
+}
+
+[React Dashboard] -down-> [FastAPI Backend] : <size:18><b>HTTP/REST</b></size>
+[FastAPI Backend] -down-> [ROS Navigation] : <size:18><b>ROS Topics</b></size>
+[ROS Navigation] -down-> [Sensors & Actuators] : <size:18><b>Direct I/O</b></size>
+
+note right of [React Dashboard]
+    <size:16><b>User Control</b></size>
+    <size:14>• Configure missions
+    • Monitor progress
+    • View results</size>
+end note
+
+note right of [ROS Navigation]
+    <size:16><b>Autonomous</b></size>
+    <size:14>• No manual driving
+    • Auto obstacle avoid
+    • Complete coverage</size>
+end note
+
+@enduml
